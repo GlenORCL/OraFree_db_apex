@@ -2,6 +2,8 @@ set termout OFF
 set define '^'
 set concat on
 set concat .
+set linesize 132
+set pagesize 999
  
 Rem
 Rem    Title:  apex_ws_schema.sql
@@ -95,7 +97,7 @@ column workspace_name           format a20
 column user_name                format a20
 column email                    format a25
 column is_admin                 format a5 heading "Admin"
-column is_application_developer format a7 heading "App Dev"
+column is_application_developer format a7 heading "Developer"
 select workspace_name, user_name, email, is_admin, is_application_developer from apex_workspace_apex_users order by 1,2;
  
 timing stop
