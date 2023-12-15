@@ -1,0 +1,46 @@
+
+SCRIPT=$(basename $0)
+
+# first logit - just echo (we haven't setup LOGFILE yet)
+function logit {
+  echo "$*"
+}
+
+function error_exit()
+{
+  echo "${SCRIPT}: Crashing - ${1:-"Unknown Error"}" 1>&2
+  logit "Crashing - $*"
+  exit 1
+}
+
+trap error_exit SIGINT
+trap error_exit SIGTERM
+trap error_exit SIGKILL
+
+ENV=${1:-DEV}    # Env defaults to DEV, or param 1 passed
+ENVDIR=vm_shares/${ENV}
+SWDIR=vm_shares/software
+
+mkdir -p ${ENVDIR}
+
+LOGFILE=${ENVDIR}/${SCRIPT}_$(date "+%Y%m%d_%H%M%S").log
+
+# new logit function - now sends output to LOGFILE too
+function logit {
+
+echo "$*"
+echo "$(date -Iseconds) $*" >> ${LOGFILE}
+
+}
+
+if [ -f "apex_${ENV}.env" ]
+then
+    logit "Using apex_${ENV}.env for environment definition"
+else
+    error_exit "apex_${ENV}.env does not exist"
+fi
+
+# Source in the ENV file 
+source apex_${ENV}.env
+
+logit "Starting ${SCRIPT} for Environment ${ENV}"

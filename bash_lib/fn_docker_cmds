@@ -1,0 +1,125 @@
+
+function remove_docker_containers() {
+  logit "* REMOVE old environment (if it exists)"
+
+  docker rm -f ${ORDS_CONTAINER}
+  docker rm -f ${DB_CONTAINER}
+  
+  if [ $(docker volume ls -q -fname=${DB_CONTAINER}_data |wc -l) != 0 ]
+  then
+    docker volume rm ${DB_CONTAINER}_data
+  fi
+
+  if [ $(docker network ls -q -fname=${NETWORK_NAME} |wc -l) != 0 ]
+  then
+    docker network rm ${NETWORK_NAME}
+  fi
+
+}
+
+function docker_create_network() {
+
+  logit "* Creating docker network ${NETWORK_NAME}"
+  docker network create ${NETWORK_NAME}
+  
+}
+
+function docker_initiate_db() {
+
+  logit "* Setup/Start DB"
+
+  # DB DETAILS
+  DB_HOSTNAME=${DB_CONTAINER}
+  DB_PORT=1521
+  DB_PDB=FREEPDB1
+  DB_SERVICE=${DB_PDB}
+
+  logit "* Creating docker volume ${DB_CONTAINER}_data"
+  docker volume create ${DB_CONTAINER}_data
+
+  logit "* Starting Container ${DB_CONTAINER}"
+  docker run -dit --name ${DB_CONTAINER} \
+            -p ${LOCAL_DB_PORT}:${DB_PORT}  \
+            --network=${NETWORK_NAME} \
+            --network-alias=${DB_CONTAINER} \
+            -e ORACLE_PWD=${SYS_PASSWORD} \
+            -v ${DB_CONTAINER}_data:/opt/oracle/oradata \
+            -v $(pwd)/${DB_DIR}/scripts/startup:/opt/oracle/scripts/startup \
+            -v $(pwd)/${DB_DIR}/scripts/setup:/opt/oracle/scripts/setup \
+            -v $(pwd)/${EXTRAS_DIR}:/opt/oracle/extras \
+            ${DB_IMAGE}
+
+}
+
+
+function docker_await_db_ready() {
+
+  while [ $(docker logs ${DB_CONTAINER}|grep "DATABASE IS READY TO USE"|wc -l) -eq 0 ]
+  do
+    logit "* DB not ready yet - waiting..."
+    sleep 5
+  done
+  logit "* DATABASE IS READY TO USE"
+
+}
+
+function docker_initiate_ords() {
+
+  logit "* Setup/Start ORDS"
+
+  # create ords directories
+  mkdir ${ORDS_DIR}/secrets
+  mkdir ${ORDS_DIR}/config
+
+  # copy over ssl cert and key used by ORDS
+  cp ssl/* ${ORDS_DIR}/config
+
+  echo "CONN_STRING=sys/${SYS_PASSWORD}@${DB_CONTAINER}:${DB_PORT}/${DB_SERVICE}" >> ${ORDS_DIR}/secrets/conn_string.txt
+
+  ORDS_PORT=8181
+
+  logit "* Starting Container ${ORDS_CONTAINER}"
+  docker run -dit --name ${ORDS_CONTAINER} \
+              -p ${LOCAL_ORDS_PORT}:${ORDS_PORT}  \
+              --network=${NETWORK_NAME} \
+              --network-alias=${ORDS_CONTAINER} \
+              -v $(pwd)/${ORDS_DIR}/secrets/:/opt/oracle/variables \
+              -v $(pwd)/${ORDS_DIR}/scripts/:/ords-entrypoint.d/ \
+              -v $(pwd)/${ORDS_DIR}/config/:/etc/ords/config/ \
+              -v $(pwd)/${EXTRAS_DIR}:/opt/oracle/extras \
+              ${ORDS_IMAGE}
+
+}
+
+function docker_await_ords_ready() {
+
+  while [ $(docker logs ${ORDS_CONTAINER}|grep "Oracle REST Data Services initialized"|wc -l) -eq 0 ]
+  do
+    logit "* ORDS not ready yet - waiting..."
+    sleep 5
+  done
+  logit "*************** ORDS IS READY TO USE"
+
+  logit "*************** https://localhost:${LOCAL_ORDS_PORT}/ords"
+  logit "Workspace: internal"
+  logit "User:      ADMIN"
+  logit "Password:  Welcome_1"
+
+}
+
+function docker_start_env() {
+#TODO - test containers exist and ENV is setup
+
+  docker start ${DB_CONTAINER}
+  docker_await_db_ready
+
+  docker start ${ORDS_CONTAINER}
+  docker_await_ords_ready
+}
+
+function docker_stop_env() {
+#TODO - test containers exist and ENV is setup
+
+  docker stop ${ORDS_CONTAINER}
+  docker stop ${DB_CONTAINER}
+}

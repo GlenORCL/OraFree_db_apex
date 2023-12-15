@@ -1,0 +1,12 @@
+#### EDIT THIS FILE TO PUT YOUR OWN CUSTOMISATIONS INTO THE ENVIRONMENT ####
+logit "Customisations starting - custom_TST"
+
+# TODO
+# ACLS - SMTP
+# ACLS - other ACCESS
+# std DIRECTORY object - probably in extras DIRECTORY
+
+# create apex ws, and schema - 1=DB schema to create, 2=Workspace to create, 3=email address for apex users (schema and apex user pw defaults to lowercase user name)
+install_exec_sql_in_pdb @scripts/apex_ws_schema.sql myapp myapp myapp@example.com
+
+logit "Customisations finished - custom_TST"

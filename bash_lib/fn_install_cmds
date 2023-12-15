@@ -1,0 +1,81 @@
+function setup_base_dirs {
+
+# DIR DETAILS for vm_shares
+    ORDS_DIR=${ENVDIR}/ords
+    DB_DIR=${ENVDIR}/oradb
+    EXTRAS_DIR=${ENVDIR}/extras
+
+    rm -Rf ${EXTRAS_DIR}
+    rm -Rf ${DB_DIR}
+    rm -Rf ${ORDS_DIR}
+    
+    mkdir -p ${EXTRAS_DIR}
+    mkdir -p ${DB_DIR}
+    mkdir -p ${ORDS_DIR}
+    mkdir -p ssl
+
+    mkdir -p ${SWDIR}
+
+}
+
+function get_software() {
+# 1 = file to grab, 2 = URL to get it from
+    if [ ! "${2}" == "" ]
+    then
+        if [ -f "${1}" ]
+        then
+            logit "* ${1} exists - no need to download"
+        else
+            logit "* Using CURL to grab ${1} from ${2}"
+            curl -o ${1} ${2}
+        fi
+    fi
+}
+
+function setup_ssl {
+    if [ ! -f "ssl/cert.crt" ] || [ ! -f "ssl/key.key" ] 
+    then
+        logit "* Generating SSL Cert and Key"
+        logit "*** Remember to add ssl/cert.crt to your browser and trust it ***"
+        rm -Rf ssl/*
+        openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
+            -nodes -keyout ssl/key.key -out ssl/cert.crt -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,DNS:*.localhost"
+    fi
+}
+
+function install_vm_shares {
+
+    logit "* Copying vm_scripts into environment specific directories in vm_shares"
+
+    cp -R vm_scripts/oradb/ ${DB_DIR}
+    cp -R vm_scripts/ords/ ${ORDS_DIR}
+    cp -R vm_scripts/extras/ ${EXTRAS_DIR}
+
+    if [ -f "${SAMPLES_ZIP:-}" ]
+    then
+        logit "Dealing with apex samples zip (placing into extras directory)"
+        unzip -q ${SAMPLES_ZIP} -d ${EXTRAS_DIR}/apex_samples
+    fi
+
+}
+
+function install_apex_samples {
+
+    logit "* Install APEX Samples"
+        
+    docker exec ${DB_CONTAINER} bash -c "/opt/oracle/extras/scripts/install_apex_samples.sh $1 $2 ${DB_PDB} $3 "
+    
+}
+
+function install_exec_sql_in_pdb {
+
+docker exec ${DB_CONTAINER} bash -c "
+cd /opt/oracle/extras; sqlplus /nolog <<SQLEOF
+conn sys/${SYS_PASSWORD} as sysdba
+alter session set container=${DB_PDB};
+$*
+SQLEOF
+"
+
+}
