@@ -4,8 +4,8 @@ My DEV setup for APEX and Oracle DB and ORDS using Oracle Container Registry ima
 
 Steps to setup everything and get working :
 1. Download into a directory (ora would be fine)
-2. optionally edit apex_DEV.env - put in a sys password, and if you want to edit other values appropriately
-5. run DESTROY_AND_SETUP.sh ENV - env defaults to DEV - this downloads all required software and sets up directories, sets up the db, ords, configures everthing and starts it up
+2. optionally edit config_DEV.env - put in a sys password, and if you want to edit other values appropriately
+5. run ORCLENV.sh DESTROY_AND_SETUP [ENV] - env defaults to DEV - this downloads all required software and sets up directories, sets up the db, ords, configures everthing and starts it up
 
 You then have a new docker network (ENV_ora_network) with these machines:
 
@@ -22,16 +22,16 @@ B) ENV_ora_ords : an ords server
 - you might want to copy the ssl/cert.crt into your browser and trust it
 
 Later use:
-1. stop.sh ENV - ENV default to DEV, to stop all running servers
-2. start.sh ENV - ENV defaults to DEV, to start the servers
-3. DESTROY_AND_SETUP.sh - destroys all data and recreates the servers
+1. ORCLENV.sh stop [ENV] - ENV default to DEV, to stop all running servers
+2. ORCLENV.sh start [ENV] - ENV defaults to DEV, to start the servers
+3. ORCLENV.sh DESTROY_AND_SETUP [ENV] - destroys all data and recreates the servers
 4. Another environment/machine setup :
-  * copy apex_DEV.env to apex_TST.env
+  * copy config_DEV.env to config_TST.env
   * edit appropriately - IMPORTANT - change local port for DB and ORDS - they must be different to DEV local ports
   * you can comment out samples url and zip, and they won't be done in this environment
-  * DESTROY_AND_SETUP.sh TST
-  * stop.sh TST
-  * start.sh TST
+  * ORCLENV.sh DESTROY_AND_SETUP TST
+  * ORCLENV.sh stop TST
+  * ORCLENV.sh start TST
 
 Advanced use:
 1. add files to vm_scripts/oradb/scripts/setup/
