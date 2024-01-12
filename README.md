@@ -7,16 +7,16 @@ Steps to setup everything and get working :
 2. optionally edit config_DEV.env - put in a sys password, and if you want to edit other values appropriately
 5. run ORCLENV.sh DESTROY_AND_SETUP [ENV] - env defaults to DEV - this downloads all required software and sets up directories, sets up the db, ords, configures everthing and starts it up
 
-You then have a new docker network (ENV_ora_network) with these machines:
+You then have a new docker network (DEV_ora_network) with these machines:
 
-A) ENV_ora_db - oracle free 23 database
+A) ENV_DEV_db - oracle free 23 database
 - listens on 1521
 - pdb = FREEPDB1
 - apex installed inside the pdb (by the ORDS startup)
 - by default, this also creates a new workspace (play_ws), new db user (play, pw=play) and installs all apex samples into that schema/workspace
-- edit custom_devapex to modify or create additional workspaces and schemas
+- edit custom_DEV to modify or create additional workspaces and schemas
 
-B) ENV_ora_ords : an ords server
+B) DEV_ora_ords : an ords server
 - listens on 8181 (https)
 - configured within the db pdb and ready to use APEX
 - you might want to copy the ssl/cert.crt into your browser and trust it
