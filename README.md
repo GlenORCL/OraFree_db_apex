@@ -21,6 +21,8 @@ B) DEV_ora_ords : an ords server
 - configured within the db pdb and ready to use APEX
 - you might want to copy the ssl/cert.crt into your browser and trust it
 
+Note : under ssl directory will be cert.crt and key.key. You should add cert.crt to your browser trusted certificates
+
 Later use:
 1. ORCLENV.sh stop [ENV] - ENV default to DEV, to stop all running servers
 2. ORCLENV.sh start [ENV] - ENV defaults to DEV, to start the servers
