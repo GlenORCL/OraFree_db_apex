@@ -20,7 +20,7 @@ function setup_base_dirs {
 
 function get_software() {
 # 1 = file to grab, 2 = URL to get it from
-    if [ ! "${2}" == "" ]
+    if [[ ${2}  ]]
     then
         if [ -f "${1}" ]
         then
@@ -49,7 +49,10 @@ function install_vm_shares {
     logit "* Copying vm_scripts into environment specific directories in vm_shares"
 
     cp -R vm_scripts/oradb/ ${DB_DIR}
-    cp -R vm_scripts/ords/ ${ORDS_DIR}
+    if [[ ${ORDS_CONTAINER:-} ]]
+    then
+        cp -R vm_scripts/ords/ ${ORDS_DIR}
+    fi
     cp -R vm_scripts/extras/ ${EXTRAS_DIR}
 
     if [ -f "${SAMPLES_ZIP:-}" ]

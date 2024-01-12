@@ -17,7 +17,15 @@ trap error_exit SIGINT
 trap error_exit SIGTERM
 trap error_exit SIGKILL
 
-ENV=${1:-DEV}    # Env defaults to DEV, or param 1 passed
+# Default environment is DEV, unless config.default exists (in which case it is the contents of that file)
+if [ -f "config.default" ]
+then
+    DEF_ENV=$(cat config.default)
+else
+    DEF_ENV=DEV
+fi
+
+ENV=${1:-${DEF_ENV}}    # Env defaults, or param 1 passed
 ENVDIR=vm_shares/${ENV}
 SWDIR=vm_shares/software
 
@@ -33,14 +41,12 @@ echo "$(date -Iseconds) $*" >> ${LOGFILE}
 
 }
 
-if [ -f "apex_${ENV}.env" ]
+if [ -f "config_${ENV}.env" ]
 then
-    logit "Using apex_${ENV}.env for environment definition"
+    logit "Using config_${ENV}.env for environment definition"
 else
-    error_exit "apex_${ENV}.env does not exist"
+    error_exit "config_${ENV}.env does not exist"
 fi
 
 # Source in the ENV file 
-source apex_${ENV}.env
-
-logit "Starting ${SCRIPT} for Environment ${ENV}"
+source config_${ENV}.env

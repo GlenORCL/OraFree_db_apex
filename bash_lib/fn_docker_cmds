@@ -2,7 +2,11 @@
 function remove_docker_containers() {
   logit "* REMOVE old environment (if it exists)"
 
-  docker rm -f ${ORDS_CONTAINER}
+  if [ ${ORDS_CONTAINER:-} ]
+  then
+      docker rm -f ${ORDS_CONTAINER}
+  fi
+
   docker rm -f ${DB_CONTAINER}
   
   if [ $(docker volume ls -q -fname=${DB_CONTAINER}_data |wc -l) != 0 ]
@@ -79,6 +83,7 @@ function docker_initiate_ords() {
   ORDS_PORT=8181
 
   logit "* Starting Container ${ORDS_CONTAINER}"
+              #-e IGNORE_APEX=TRUE 
   docker run -dit --name ${ORDS_CONTAINER} \
               -p ${LOCAL_ORDS_PORT}:${ORDS_PORT}  \
               --network=${NETWORK_NAME} \
@@ -113,13 +118,69 @@ function docker_start_env() {
   docker start ${DB_CONTAINER}
   docker_await_db_ready
 
-  docker start ${ORDS_CONTAINER}
-  docker_await_ords_ready
+  if [ ${ORDS_CONTAINER:-} ]
+  then
+      docker start ${ORDS_CONTAINER}
+      docker_await_ords_ready
+  fi
 }
 
 function docker_stop_env() {
 #TODO - test containers exist and ENV is setup
 
-  docker stop ${ORDS_CONTAINER}
+  if [ ${ORDS_CONTAINER:-} ]
+  then
+      docker stop ${ORDS_CONTAINER}
+  fi
   docker stop ${DB_CONTAINER}
+}
+
+function docker_destroy_and_setup() {
+
+# INITIAL SETUP
+setup_base_dirs
+if [ ${ORDS_CONTAINE:-} ]
+then
+    setup_ssl
+fi
+
+# If any samples URL specified for this ENV, download it (if not already)
+get_software "${SAMPLES_ZIP:-}" "${SAMPLES_ZIP_URL:-}"
+
+# Grab images from Registry
+docker pull ${DB_IMAGE}
+if [ ${ORDS_IMAGE:-} ]
+then
+    docker pull ${ORDS_IMAGE}
+fi
+
+# CLEANUP ANY EXISTING OLD ENVIRONMENT
+remove_docker_containers
+
+# setup vm_shares directory for this ENV
+install_vm_shares
+
+# NOW START DOCKER SETUP
+docker_create_network
+
+docker_initiate_db
+docker_await_db_ready
+
+# perform standard db init - set db directories, open acls etc.
+#install_exec_sql_in_pdb @scripts/db_init.sql
+
+if [[ ${ORDS_IMAGE:-} ]]
+then
+    docker_initiate_ords
+    docker_await_ords_ready
+fi
+
+# OPTIONAL CUSTOMISATION
+if [ -f "custom_${ENV}" ]
+then
+    source custom_${ENV}
+fi
+
+logit "Finished"
+
 }
